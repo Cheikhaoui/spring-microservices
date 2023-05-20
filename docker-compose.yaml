@@ -1,0 +1,56 @@
+version: '3.7'
+services:
+  currency-exchange:
+    image: in28minutes/microservices-exchange-service:0.0.2-SNAPSHOT
+    mem_reservation: 700m
+    networks:
+      - currency-network
+    environment:
+      - eureka.client.service-url.defaultZone=http://naming-server:8761/eureka
+      - management.zipkin.tracing.endpoint=http://zipkin-server:9411/api/v2/spans
+    depends_on:
+      - naming-server
+    deploy:
+      replicas: 2
+  currency-conversion:
+    image: in28minutes/microservices-currency-conversion-service:0.0.1-SNAPSHOT
+    environment:
+      - eureka.client.service-url.defaultZone=http://naming-server:8761/eureka
+      - management.zipkin.tracing.endpoint=http://zipkin-server:9411/api/v2/spans
+    mem_reservation: 700m
+    ports:
+      - "8001:8001"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+  api-gateway:
+    image: in28minutes/microservices-api-gateway:0.0.1-SNAPSHOT
+    mem_reservation: 700m
+    environment:
+      - eureka.client.service-url.defaultZone=http://naming-server:8761/eureka
+      - management.zipkin.tracing.endpoint=http://zipkin-server:9411/api/v2/spans
+    ports:
+      - "8765:8765"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+  naming-server:
+      image: in28minutes/microservices-naming-server:0.0.1-SNAPSHOT
+      mem_reservation: 700m
+      ports:
+        - "8761:8761"
+      networks:
+        - currency-network
+  zipkin-server:
+    image: openzipkin/zipkin:2.23
+    mem_reservation: 300m
+    ports:
+      - "9411:9411"
+    networks:
+      - currency-network
+    restart: always
+
+networks:
+  currency-network:
